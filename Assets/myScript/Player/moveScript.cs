@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class moveScript : MonoBehaviour
 {
     private Rigidbody2D rig;   //刚体
-    private float jumpForce;  //跳跃的力
+    private float jumpSpeed;  //跳跃的力
     private float horizontal;  //水平轴值
     private float moveSpeed; //水平移动速度绝对值
     private float move; //水平移动速度
@@ -48,7 +48,7 @@ public class moveScript : MonoBehaviour
 
 
         myAttri = GetComponent<createAttri>().xia; //引用对象
-        jumpForce = myAttri.JumpSpd;
+        jumpSpeed = myAttri.JumpSpd;
         moveSpeed = myAttri.MoveSpd;
 
         t = 0;
@@ -89,7 +89,6 @@ public class moveScript : MonoBehaviour
 
         if(Input.GetButton("Horizontal"))
         {
-            
             _isWalk = true;
         }
         else if(Input.GetButtonUp("Horizontal"))
@@ -97,16 +96,14 @@ public class moveScript : MonoBehaviour
             _isWalk = false;
         }
 
+        if (Input.GetButtonDown("Jump"))//跳跃
+        {
+            
+            playerJump();
+
+        }
         playerMove();
         _updateJump();
-
-
-        if ( Input.GetButtonDown("Jump") )//跳跃
-        {
-            //jumpTime = 0;
-            playerJump();
-            
-        }
 
     }
    
@@ -129,12 +126,13 @@ public class moveScript : MonoBehaviour
             if(_walkState == null)
             {
                 _walkState = _playerArmature.animation.FadeIn("walk", -1.0f, -1, 0, "normal");
+               
                 _walkState.resetToPose = false;
              
             }
 
             horizontal = Input.GetAxisRaw("Horizontal");
-            move = horizontal * myAttri.MoveSpd;
+            move = horizontal * moveSpeed;
             rig.velocity = new Vector2(move, rig.velocity.y);
             
             if (horizontal < 0)
@@ -163,17 +161,16 @@ public class moveScript : MonoBehaviour
 
     void playerJump()
     {
-       
-        if (_isJump) return;
-        rig.velocity = new Vector2(0,myAttri.JumpSpd);
-        _jumpState =  _playerArmature.animation.FadeIn("jump", -1, 1, 0, "normal");
-        _isJump = true;
+        if (onWhere("Earth") || onWhere("Terrace"))
+        {
+            rig.velocity = new Vector2(0,jumpSpeed);
+            _jumpState =  _playerArmature.animation.FadeIn("jump", -1, 1, 0, "normal");
+            _isJump = true;
+        }
+        
           
     }
-
-    
-
-  
+      
     bool onWhere(string str)
     {
         Vector2 ve = new Vector2(transform.position.x, transform.position.y - 0.78f);
@@ -195,27 +192,48 @@ public class moveScript : MonoBehaviour
 
     void _updateJump()
     {
-           
-        if(_isJump)
+        if (_jumpState == null)
+            return;
+        //Debug.Log(_jumpState.name);
+        if (_isJump)
         {
-            switch (_playerArmature.animationName)
+            switch (_jumpState.name)
             {
+                case "jump":
+                    if (_jumpState.isCompleted == true)
+                    {
+                        _jumpState = _playerArmature.animation.FadeIn("jumpup", -1f, -1, 0, "normal");
+                    }
+                    break;
                 case "jumpup":
                     if(rig.velocity.y <= 0.5f)
                     {
                         _jumpState = _playerArmature.animation.FadeIn("jumpturn", -1f, 1, 0, "normal");
                     }
                     break;
+
+                case "jumpturn":
+                    if(_jumpState.isCompleted == true)
+                    {
+                        _jumpState = _playerArmature.animation.FadeIn("jumpdown", -1f, -1, 0, "normal");
+                    }
+                    break;
              
                 case "jumpdown":
                     if (onWhere("Earth") || onWhere("Terrace"))
                     {
-                        _jumpState = _playerArmature.animation.FadeIn("fall", -1f, 1, 0, "normal");
+                        _jumpState = _playerArmature.animation.FadeIn("fall", -1f, 1, 0, "normal");                        
                     }
                     break;
-
-                default:
-
+                case "fall":
+                    if(_jumpState.isCompleted == true)
+                    {
+                        _jumpState = null;
+                        _isJump = false;
+                    }
+                    break;
+                case "":
+                    _jumpState = null;
                     break;
             }
                 
