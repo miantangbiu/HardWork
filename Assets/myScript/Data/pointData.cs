@@ -20,6 +20,7 @@ public class pointData : MonoBehaviour {
 
     private void OnTriggerStay2D(Collider2D collision)
     {
+        
         if (collision.gameObject.tag == "Player")
         {
             dialog = GameObject.Find("tipBack");

@@ -50,7 +50,7 @@ public class LV1StayState : FSMBaseState
     {
 
         monsterObj = myObject;
-        playerObj = GameObject.Find("xia");
+        playerObj = GameObject.Find("player");
 
         ani = monsterObj.GetComponent<Animator>();
         myposi = monsterObj.transform.position;
