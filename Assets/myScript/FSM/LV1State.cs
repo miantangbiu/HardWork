@@ -121,7 +121,7 @@ public class LV1AttackState : FSMBaseState
     {
 
         monsterObj = myObject;
-        playerObj = GameObject.Find("xia");
+        playerObj = GameObject.Find("player");
         att = monsterObj.GetComponent<LV1>().LV1Att;
         ani = monsterObj.GetComponent<Animator>();
         colli = playerObj.GetComponent<BoxCollider2D>();
