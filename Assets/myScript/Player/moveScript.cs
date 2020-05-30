@@ -4,6 +4,7 @@ using DragonBones;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine.UI;
+using System;
 
 public class moveScript : MonoBehaviour
 {
@@ -24,6 +25,7 @@ public class moveScript : MonoBehaviour
     private float jumpSpeed;  //跳跃的力
     private float horizontal;  //水平轴值
     private float moveSpeed; //水平移动速度绝对值
+    public float bulletSpd;
     private float move; //水平移动速度
     public int jumpCount;//跳跃次数
 
@@ -89,21 +91,24 @@ public class moveScript : MonoBehaviour
 
         _playerArmature = GetComponent<UnityArmatureComponent>();
 
-        //_playerArmature.AddDBEventListener(EventObject.FRAME_EVENT, _OnAnimationEventHandler);
+        _playerArmature.AddDBEventListener(EventObject.FRAME_EVENT, _OnAnimationEventHandler);
 
         _playerArmature.animation.Play("idle");
 
         myAttri = GetComponent<createAttri>().xia; //引用对象
         jumpSpeed = myAttri.JumpSpd;
         moveSpeed = myAttri.MoveSpd;
+        bulletSpd = 10;
 
-        fireCD = 1f / myAttri.AtkSpd;
+        
 
         jumpCount = 1;//初始化跳跃次数
         skillOneCD = 3f;
         skillTwoCD = 5f;
 
     }
+
+   
 
     // Update is called once per frame
     void Update()
@@ -124,7 +129,7 @@ public class moveScript : MonoBehaviour
             Physics2D.IgnoreLayerCollision(9, 10, !onWhere("Terrace")); //碰撞忽视
         }
         
-        if(Input.GetButton("Horizontal"))
+        if(Input.GetButton("Horizontal") && !isSkillO)
         {
             isWalk = true;
         }
@@ -135,15 +140,23 @@ public class moveScript : MonoBehaviour
 
         if (Input.GetButtonDown("Jump")&&(onWhere("Earth") || onWhere("Terrace")))//跳跃
         {
-            jumpCount = 1;
+            jumpCount += 1;
             isJump = true;
-            
+            if ( jumpCount > 0)
+            {
+                rig.velocity = new Vector2(rig.velocity.x, jumpSpeed);
+                
+                jumpCount--;
+
+            }
+
         }
 
         _updateWalk();
         _updateJump();
         _updateAttack();
-
+       
+        Debug.Log(isWalk);
 
         //fire
         if (imaOne.fillAmount != 0)
@@ -156,14 +169,14 @@ public class moveScript : MonoBehaviour
             imaTwo.fillAmount -= Time.deltaTime / skillTwoCD;
         }
 
-        if (Input.GetKeyDown(KeyCode.U) & !isSkillO)
+        if (Input.GetKeyDown(KeyCode.U) & imaOne.fillAmount == 0)
         {
-            skillOne();
+            isSkillO = true;
         }
 
-        if (Input.GetKeyDown(KeyCode.I) & !isSkillT)
+        if (Input.GetKeyDown(KeyCode.I) & imaTwo.fillAmount == 0)
         {
-            skillTwo();
+            isSkillT = true;
         }
 
         if (isFire)
@@ -172,7 +185,7 @@ public class moveScript : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.J) || Input.GetKey(KeyCode.J))
         {
-            attack();
+            isFire = true;
         }
     }
 
@@ -212,10 +225,8 @@ public class moveScript : MonoBehaviour
         {
             if( _walkState == null)
             {
-                _walkState = _playerArmature.animation.Play("walk");
+                _walkState = _playerArmature.animation.FadeIn("walk",-1,-1,1);
                
-                
-             
             }
 
             horizontal = Input.GetAxisRaw("Horizontal");
@@ -248,13 +259,7 @@ public class moveScript : MonoBehaviour
 
     void playerJump()
     {
-        if (isJump == true && jumpCount > 0)
-        {
-            rig.velocity = new Vector2(rig.velocity.x,jumpSpeed);
-            _jumpState =  _playerArmature.animation.Play("jump", 1);
-            jumpCount -- ;
-           
-        }
+       
         
     }
       
@@ -274,10 +279,9 @@ public class moveScript : MonoBehaviour
 
     void _updateJump()
     {
-        if (_jumpState == null)
-            return;
-
-        if (isJump)
+        if(isJump && _jumpState == null)
+            _jumpState = _playerArmature.animation.Play("jump", 1);
+        if (isJump && _jumpState != null)
         {
             switch (_jumpState.name)
             {
@@ -314,30 +318,39 @@ public class moveScript : MonoBehaviour
                         _jumpState = null;
                     }
                     break;
-                case "":
-                    _jumpState = null;
-                    break;
+             
             }
-                
+           
         }
-       
+        if (_jumpState != null && _jumpState.name == "")
+                _jumpState = null;
+                
     }
 
     void _updateAttack()
     {
-
+        if (_fireState != null && _fireState.name == "")
+            _fireState = null;
         if (isFire && _fireState == null)
         {
 
-            _fireState = _playerArmature.animation.FadeIn("attack", -1, 1, 1, "attack");
-            Debug.Log(_fireState.layer);
-            _fireState.resetToPose = false;
+            _fireState = _playerArmature.animation.FadeIn("attack", -1, 1, 2, "attack");
+            _fireState.timeScale = myAttri.AtkSpd;
+            //_fireState.resetToPose = false;
 
-           
         }
-        else if(_fireState != null && _fireState.name != "" && _fireState.isCompleted)
+        else if(isSkillO && _fireState == null)
         {
-
+            _fireState = _playerArmature.animation.FadeIn("skillOne", -1, 1, 2, "skill");
+        }
+        else if(isSkillT && _fireState == null)
+        {
+            _fireState = _playerArmature.animation.FadeIn("skillTwo", -1, 1, 2, "skill");
+        }
+        else if (_fireState != null  && _fireState.isCompleted)
+        {
+            isSkillO = false;
+            isSkillT = false;
             _fireState = null;
         }
     }
@@ -352,41 +365,30 @@ public class moveScript : MonoBehaviour
         //加载预设体资源           
         GameObject bulletObject = Instantiate(bullet, transform.position, transform.rotation);
         Rigidbody2D rig2 = bulletObject.GetComponent<Rigidbody2D>();
-        rig2.AddForce(new Vector2(transform.localScale.x * 500f, 0));
+        rig2.velocity = new Vector2(transform.localScale.x * bulletSpd, 0);
         bulletObject.transform.localScale = transform.localScale;
 
-        isFire = true;
-        Destroy(bulletObject, 10f);
+        Destroy(bulletObject, myAttri.AtkRange/bulletSpd);
     }
     private void skillOne()
     {
         Vector3 ve;
-        Quaternion qua;
-        RaycastHit2D myhit = Physics2D.Raycast(transform.position, Vector2.right, 30f);
-        qua = transform.rotation;
-        ve = new Vector3(transform.position.x + myCollider.size.x,
-              transform.position.y - 0.1f,
+        ve = new Vector3(transform.position.x + myCollider.size.x+0.2f,
+              transform.position.y - 0.2f,
               transform.position.z
               );
         if (transform.localScale.x == -1)
         {
-            qua = new Quaternion(
-                transform.rotation.x,
-                180,
-                transform.rotation.z,
-                transform.rotation.w
-                );
             ve = new Vector3(
-                transform.position.x - myCollider.size.x,
-                transform.position.y - 0.1f,
+                transform.position.x - (myCollider.size.x+0.2f),
+                transform.position.y -0.2f,
                 transform.position.z
-                  );
+                );
         }
 
-        Instantiate(fire, ve, qua, this.gameObject.transform);
-        Instantiate(ray, ve, qua, this.gameObject.transform);
-        isSkillO = false;
-        CDTime(skillOneCD);
+        Instantiate(fire, ve,transform.rotation, gameObject.transform);
+        Instantiate(ray, ve, transform.rotation, gameObject.transform);
+        imaOne.fillAmount = 1;
 
     }
 
@@ -406,39 +408,23 @@ public class moveScript : MonoBehaviour
         ar2.GetComponent<Rigidbody2D>().velocity = new Vector2(0, -10);
         ar3.GetComponent<Rigidbody2D>().velocity = new Vector2(-10, 0);
         ar4.GetComponent<Rigidbody2D>().velocity = new Vector2(10, 0);
-
-        isSkillT = false;
-        CDTime(skillTwoCD);
-    }
-   
-
-    void CDTime(float a)
-    {
-
-        StartCoroutine(skill(a));
+        imaTwo.fillAmount = 1;
     }
 
-    IEnumerator skill(float a)
+    private void _OnAnimationEventHandler(string type, EventObject eventObject)
     {
-        if (a == skillOneCD)
+        switch (eventObject.name)
         {
-            imaOne.fillAmount = 1;
+            case "fire":
+                attack();
+                break;
+            case "skillOne":
+                skillOne();
+                break;
+            case "skillTwo":
+                skillTwo();
+                break;
         }
-        else if (a == skillTwoCD)
-        {
-            imaTwo.fillAmount = 1;
-        }
-
-        yield return new WaitForSeconds(a);
-        if (a == skillOneCD)
-        {
-            isSkillO = true;
-        }
-        else if (a == skillTwoCD)
-        {
-            isSkillT = true;
-        }
-
     }
 }
 
