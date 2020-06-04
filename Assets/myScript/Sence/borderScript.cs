@@ -17,7 +17,7 @@ public class borderScript : MonoBehaviour {
     {
         if(collision.tag == "Player")
         {
-            GameObject.Find("xia").GetComponent<createAttri>().xia.Hp = 0;
+            collision.GetComponent<createAttri>().xia.Hp = 0;
         }
     }
 }

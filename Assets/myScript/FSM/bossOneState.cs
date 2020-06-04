@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DragonBones;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,15 +8,18 @@ public class bossOneBorn : FSMBaseState
 {
     public bossOneBorn(FSMSystem fsmSystem) : base(fsmSystem,FSMStateID.born){ }
 
-    Animator ani;
+    UnityArmatureComponent ani;
+    DragonBones.AnimationState aniState;
+
     GameObject monsterObj;
 
 
     public override void StateStart(GameObject myObject)
     {
         monsterObj = myObject;
-        ani = monsterObj.GetComponent<Animator>();
-        ani.Play("born");
+        ani = monsterObj.GetComponent<UnityArmatureComponent>();
+        aniState = ani.animation.Play("born",1);
+      
     }
 
     public override void StateUpdate()
@@ -30,7 +34,7 @@ public class bossOneBorn : FSMBaseState
 
     public override void TransitionReason()
     {
-        if(ani.GetCurrentAnimatorStateInfo(0).normalizedTime > 0.99f)
+        if(aniState != null && aniState.isCompleted)
         {
             myFSMSystem.TransitionFSMState(FSMTransition.LeavePlayer);
         }
@@ -43,7 +47,9 @@ public class bossOneStay : FSMBaseState
 
     GameObject monsterObj;
 
-    private Animator ani;
+    UnityArmatureComponent ani;
+    DragonBones.AnimationState aniState;
+
 
     float mytime;
 
@@ -55,9 +61,9 @@ public class bossOneStay : FSMBaseState
     public override void StateStart(GameObject myObject)
     {
         monsterObj = myObject;
-        ani = myObject.GetComponent<Animator>();
-        ani.Play("stay");
-        monsterObj.GetComponent<BoxCollider2D>().enabled = false;
+        ani = monsterObj.GetComponent<UnityArmatureComponent>();
+        ani.animation.Play("stay");
+        
         mytime = 0;
      }
 

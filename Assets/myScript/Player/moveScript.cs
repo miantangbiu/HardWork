@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine.UI;
 using System;
+using UnityEngine.EventSystems;
 
 public class moveScript : MonoBehaviour
 {
@@ -32,9 +33,9 @@ public class moveScript : MonoBehaviour
     //标记
     private bool isWalk;//行走状态
     private bool isJump;//跳跃状态
-    private bool isSqaut;//蹲状态
+    private bool isSquat;//蹲状态
     private bool isIgnore;//忽略层
- 
+    //public bool isHit;
     private bool isFire;//攻击状态
     private bool isSkillO;//技能1
     private bool isSkillT;//技能2
@@ -42,8 +43,8 @@ public class moveScript : MonoBehaviour
     //动画状态
     private DragonBones.AnimationState _walkState;
     private DragonBones.AnimationState _jumpState;
-    private DragonBones.AnimationState _fireState;
-    private DragonBones.AnimationState _skillState;
+    private DragonBones.AnimationState _attackState;
+    private DragonBones.AnimationState _hitState;
 
     //CD
     float fireCD;
@@ -60,16 +61,17 @@ public class moveScript : MonoBehaviour
     {
         isIgnore = false;
         isJump = false;
-        isSqaut = false;
+        isSquat = false;
         isWalk = false;
         isFire = false;
+       // isHit = false;
         isSkillO = false;
         isSkillT = false;
 
         _walkState = null;
         _jumpState = null;
-        _fireState = null;
-        _skillState = null;
+        _attackState = null;
+        
 
         t = 0;
 
@@ -96,12 +98,13 @@ public class moveScript : MonoBehaviour
         _playerArmature.animation.Play("idle");
 
         myAttri = GetComponent<createAttri>().xia; //引用对象
+        //设置角色数据
         jumpSpeed = myAttri.JumpSpd;
         moveSpeed = myAttri.MoveSpd;
         bulletSpd = 10;
 
         
-
+        //设置技能限制
         jumpCount = 1;//初始化跳跃次数
         skillOneCD = 3f;
         skillTwoCD = 5f;
@@ -113,23 +116,32 @@ public class moveScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.DrawRay(new Vector2(transform.position.x, transform.position.y - 0.78f), Vector2.down * 0.1f, Color.red);
+        Debug.DrawRay(new Vector2(transform.position.x, transform.position.y - 0.7f), Vector2.down * 0.2f, Color.red);
         
-        if (Input.GetKeyDown(KeyCode.S))
+        //下蹲与下跳
+        if (Input.GetKey(KeyCode.S) && !isJump)
         {
-            isIgnore = true;
-            Physics2D.IgnoreLayerCollision(9, 10, isIgnore);            
+            isSquat = true;           
+            if (Input.GetKeyDown(KeyCode.K))
+            {
+                isIgnore = true;
+                Physics2D.IgnoreLayerCollision(9, 10, isIgnore);
+            }
         }
         if (isIgnore)
         {
-            timeDown();
+            timeDown(0.45f);
         }
         else
         {
             Physics2D.IgnoreLayerCollision(9, 10, !onWhere("Terrace")); //碰撞忽视
         }
-        
-        if(Input.GetButton("Horizontal") && !isSkillO)
+
+        if (Input.GetKeyUp(KeyCode.S))
+            isSquat = false;
+
+        //水平行走
+        if(Input.GetButton("Horizontal"))
         {
             isWalk = true;
         }
@@ -138,47 +150,14 @@ public class moveScript : MonoBehaviour
             isWalk = false;
         }
 
-        if (Input.GetButtonDown("Jump")&&(onWhere("Earth") || onWhere("Terrace")))//跳跃
+        //跳跃
+        if (Input.GetButtonDown("Jump")&&(onWhere("Earth") || onWhere("Terrace")))
         {
-            jumpCount += 1;
             isJump = true;
-            if ( jumpCount > 0)
-            {
-                rig.velocity = new Vector2(rig.velocity.x, jumpSpeed);
-                
-                jumpCount--;
-
-            }
-
         }
 
-        _updateWalk();
-        _updateJump();
-        _updateAttack();
-       
-        Debug.Log(isWalk);
 
-        //fire
-        if (imaOne.fillAmount != 0)
-        {
-            imaOne.fillAmount -= Time.deltaTime / skillOneCD;
-        }
-
-        if (imaTwo.fillAmount != 0)
-        {
-            imaTwo.fillAmount -= Time.deltaTime / skillTwoCD;
-        }
-
-        if (Input.GetKeyDown(KeyCode.U) & imaOne.fillAmount == 0)
-        {
-            isSkillO = true;
-        }
-
-        if (Input.GetKeyDown(KeyCode.I) & imaTwo.fillAmount == 0)
-        {
-            isSkillT = true;
-        }
-
+        //普通攻击
         if (isFire)
         {
             timeDown(fireCD);
@@ -187,35 +166,63 @@ public class moveScript : MonoBehaviour
         {
             isFire = true;
         }
+
+        //技能1：激光
+        if (Input.GetKeyDown(KeyCode.U) & imaOne.fillAmount == 0)
+        {
+            isSkillO = true;
+        }
+
+        //技能2：弹幕
+        if (Input.GetKeyDown(KeyCode.I) & imaTwo.fillAmount == 0)
+        {
+            isSkillT = true;
+        }
+
+        //技能倒计时
+        if (imaOne.fillAmount != 0)
+        {
+            imaOne.fillAmount -= Time.deltaTime / skillOneCD;
+        }
+        if (imaTwo.fillAmount != 0)
+        {
+            imaTwo.fillAmount -= Time.deltaTime / skillTwoCD;
+        }
+
+        _updateWalk();
+        _updateJump();
+        _updateAttack();
+      //  _updateHit();
+
+       
+       
+        //Debug.Log("walk:" + isWalk);
+        //Debug.Log("jump:" + isJump);
+        //Debug.Log("squat:"+ isSquat);
+        //Debug.Log("sk1:" + isSkillO);
+        //Debug.Log("sk2:" + isSkillT);
+        //Debug.Log("fire:" + isFire);
+       // Debug.Log("hit:" + isHit);
     }
 
     private void FixedUpdate()
     {
-        playerJump();
         playerMove();
+      
+
     }
 
+    //倒计时
     void timeDown(float i)
     {
 
         t += Time.deltaTime;
         if (t >= i)
         {
-
+            isIgnore = false;
             isFire = false;
             t = 0;
 
-        }
-    }
-    void timeDown()
-    {
-        t1 += Time.deltaTime;
-        if (t1 > 0.45f)
-        {
-
-            t1 = 0;
-            isIgnore = false;
-            
         }
     }
     
@@ -223,12 +230,6 @@ public class moveScript : MonoBehaviour
     {
         if (isWalk)
         {
-            if( _walkState == null)
-            {
-                _walkState = _playerArmature.animation.FadeIn("walk",-1,-1,1);
-               
-            }
-
             horizontal = Input.GetAxisRaw("Horizontal");
             move = horizontal * moveSpeed;
             rig.velocity = new Vector2(move, rig.velocity.y);
@@ -245,118 +246,142 @@ public class moveScript : MonoBehaviour
         }
         else
         {
-            if(_walkState != null)
-            {
-                _playerArmature.animation.Play("idle");
-                _walkState = null;
-            }
-           
             rig.velocity = new Vector2(0,rig.velocity.y);
         }
        
 
     }
 
-    void playerJump()
+    void _updateHit()
     {
+        //if (_hitState != null && _hitState.name == "")
+        //    _hitState = null;
+        //if (isHit && (_hitState == null || _hitState.name != "hit"))
+        //{
+        //    Debug.Log("1");
+        //    _hitState = _playerArmature.animation.Play("hit", 1);
+        //    isHit = false;
+        //}
        
-        
     }
-      
-    bool onWhere(string str)
-    {
-        Vector2 ve = new Vector2(transform.position.x, transform.position.y - 0.78f);
-        //射线检测
-        RaycastHit2D myray = Physics2D.Raycast(ve, Vector2.down, 0.1f);
-        
-        if (myray && myray.collider.tag == str)
-        {
-            return true;
-        }
-        return false;
-    }
-
-
+    
     void _updateJump()
     {
-        if(isJump && _jumpState == null)
-            _jumpState = _playerArmature.animation.Play("jump", 1);
-        if (isJump && _jumpState != null)
-        {
-            switch (_jumpState.name)
-            {
-                case "jump":
-                    if (_jumpState.isCompleted == true)
-                    {
-                        _jumpState = _playerArmature.animation.Play("jumpup", -1);
-                    }
-                    break;
-                case "jumpup":
-                    if(rig.velocity.y <= 0.5f)
-                    {
-                        _jumpState = _playerArmature.animation.Play("jumpturn", 1);
-                    }
-                    break;
-
-                case "jumpturn":
-                    if(_jumpState.isCompleted == true)
-                    {
-                        _jumpState = _playerArmature.animation.Play("jumpdown", -1);
-                    }
-                    break;
-             
-                case "jumpdown":
-                    if (onWhere("Earth") || onWhere("Terrace"))
-                    {
-                        isJump = false;                        
-                        _jumpState = _playerArmature.animation.Play("fall",1);                        
-                    }
-                    break;
-                case "fall":
-                    if(_jumpState.isCompleted == true)
-                    {
-                        _jumpState = null;
-                    }
-                    break;
-             
-            }
-           
-        }
         if (_jumpState != null && _jumpState.name == "")
-                _jumpState = null;
-                
+            _jumpState = null;
+
+        if (isJump)
+        {
+            if ( _jumpState == null )
+            {
+                isSquat = false;
+                _jumpState = _playerArmature.animation.Play("jump", 1);
+                rig.velocity = new Vector2(rig.velocity.x, jumpSpeed);
+            }
+            if ( _jumpState != null)
+            {
+                switch (_jumpState.name)
+                {
+                    case "jump":
+                        if (_jumpState.isCompleted == true)
+                        {
+                            _jumpState = _playerArmature.animation.FadeIn("jumpup",-1, -1,0);
+                        }
+                        break;
+                    case "jumpup":
+                        if(rig.velocity.y <= 0.5f)
+                        {
+                            _jumpState = _playerArmature.animation.FadeIn("jumpturn", -1,1,0);
+                        }
+                        break;
+
+                    case "jumpturn":
+                        if(_jumpState.isCompleted == true)
+                        {
+                            _jumpState = _playerArmature.animation.FadeIn("jumpdown", -1,-1,0);
+                        }
+                        break;
+             
+                    case "jumpdown":
+                        if (onWhere("Earth") || onWhere("Terrace"))
+                        {
+                            isJump = false;                        
+                            _jumpState = _playerArmature.animation.FadeIn("fall",-1,1,0);                        
+                        }
+                        break;
+                    case "fall":
+                        if(_jumpState.isCompleted == true)
+                        {
+                            _jumpState = null;
+                        }
+                        break;
+             
+                }
+           
+            }
+        
+
+        }
+
+        if (isSquat && !isJump)
+        {
+            _jumpState = _playerArmature.animation.Play("squating");
+        }
+        
+        
     }
 
     void _updateAttack()
     {
-        if (_fireState != null && _fireState.name == "")
-            _fireState = null;
-        if (isFire && _fireState == null)
-        {
+        if (_attackState != null && _attackState.name == "")
+            _attackState = null;
+        if(_attackState == null) { 
+        
+            if (isFire)
+            {
+                _attackState = _playerArmature.animation.FadeIn("attack", -1, 1, 2, "attack");
+                _attackState.timeScale = myAttri.AtkSpd;
+                //_fireState.resetToPose = false;
 
-            _fireState = _playerArmature.animation.FadeIn("attack", -1, 1, 2, "attack");
-            _fireState.timeScale = myAttri.AtkSpd;
-            //_fireState.resetToPose = false;
-
+            }
+            else if(isSkillO)
+            {
+                _attackState = _playerArmature.animation.FadeIn("skillOne", -1, 1, 2, "skill");
+            }
+            else if(isSkillT)
+            {
+                _attackState = _playerArmature.animation.FadeIn("skillTwo", -1, 1, 2, "skill");
+            }
         }
-        else if(isSkillO && _fireState == null)
-        {
-            _fireState = _playerArmature.animation.FadeIn("skillOne", -1, 1, 2, "skill");
-        }
-        else if(isSkillT && _fireState == null)
-        {
-            _fireState = _playerArmature.animation.FadeIn("skillTwo", -1, 1, 2, "skill");
-        }
-        else if (_fireState != null  && _fireState.isCompleted)
+        
+        if(_attackState != null  && _attackState.isCompleted)
         {
             isSkillO = false;
             isSkillT = false;
-            _fireState = null;
+            _attackState = null;
         }
+
     }
+
     void _updateWalk()
     {
+        if (!(isWalk || isSquat || isJump) && _walkState != null && _walkState.name != "idle")
+        {
 
+            _walkState = _playerArmature.animation.Play("idle");
+        }
+        
+
+     
+        if (isWalk &&(_walkState == null || _walkState.name != "walk") && _jumpState == null)
+        {
+          
+            _walkState = _playerArmature.animation.FadeIn("walk", -1, -1, 1);
+        }
+
+           
+        
+        
     }
 
     //fire
@@ -424,6 +449,49 @@ public class moveScript : MonoBehaviour
             case "skillTwo":
                 skillTwo();
                 break;
+        }
+    }
+
+
+    bool onWhere(string str)
+    {
+        Vector2 ve = new Vector2(transform.position.x, transform.position.y - 0.7f);
+        //射线检测
+
+        RaycastHit2D[] rays = Physics2D.RaycastAll(ve, Vector2.down, 0.2f);
+
+        foreach (var re in rays)
+        {
+            if (re.collider.tag == str)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if (collision.tag == "Rope")
+        {
+            
+            if (Input.GetButton("Vertical"))
+            {
+                transform.position = new Vector2(collision.transform.position.x, transform.position.y);
+                rig.gravityScale = 0;
+                rig.velocity = Vector2.zero;
+            }
+
+            float a = Input.GetAxisRaw("Vertical");
+            transform.position = new Vector2(transform.position.x,transform.position.y+(0.02f*a));
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if(collision.tag == "Rope")
+        {
+            rig.gravityScale = 1;
         }
     }
 }

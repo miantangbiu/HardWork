@@ -9,25 +9,33 @@ public class fireScript : MonoBehaviour
 {
     private UnityArmatureComponent playerArmature;
     private DragonBones.AnimationState state;
+    private Animator ani;
+
     private void Start()
     {
         playerArmature = GetComponent<UnityArmatureComponent>();
-        playerArmature.animation.Play("walk",-1);
+      //  playerArmature.animation.Play("walk",-1);
+        ani = GameObject.Find("fire").GetComponent<Animator>();
     }
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.A))
+        if (Input.GetKeyDown(KeyCode.N))
         {
-            state = playerArmature.animation.FadeIn("jump", -1, 1, 1,"hand",AnimationFadeOutMode.None);
+            state = playerArmature.animation.FadeIn("skillOne", -1, 1, 1,"hand",AnimationFadeOutMode.None);
             //playerArmature.animation.FadeIn("jump", -1, 1, 1, "normal", AnimationFadeOutMode.SameLayer);
             state.resetToPose = false;
 
         }
-
-        if(state!= null && state.isCompleted)
+        if (Input.GetKeyDown(KeyCode.M))
         {
-            state.layer = 0;
-            state = null;
+            playerArmature.animation.FadeIn("jumpturn");
         }
+    }
+
+    void test1()
+    {
+        Debug.Log("test");
+        ani.Play("curtainFire");
+        
     }
 }

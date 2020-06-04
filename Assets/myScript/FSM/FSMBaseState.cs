@@ -5,6 +5,7 @@ using System.Linq;
 
 public abstract class FSMBaseState
 {
+    
     public FSMStateID myStateID { get; set; }    //状态ID
     public FSMSystem myFSMSystem { get; set; }   //该对象属于在哪个状态机
 

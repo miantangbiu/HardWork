@@ -7,11 +7,12 @@ public class hurtCount{
     public static void hurt(int hurt,GameObject hurtman)
     {
         attribute manAttri;
+       
         if (hurtman.tag == "Enemy" || hurtman.tag == "Player")
         {
             switch (hurtman.name)
             {
-                case "xia":
+                case "player":
                     manAttri = hurtman.GetComponent<createAttri>().xia;
                     break;
                 case "dinosaur":
@@ -36,7 +37,8 @@ public class hurtCount{
                 numberShow.hurtShow(hurt, hurtman.transform.position);
                 if(hurtman.tag == "Player")
                 {
-                    hurtman.GetComponent<SpriteRenderer>().color = Color.red;
+                    // hurtman.GetComponent<SpriteRenderer>().color = Color.red;
+                    //hurtman.gameObject.GetComponent<moveScript>().isHit = true;
                 }
             
 

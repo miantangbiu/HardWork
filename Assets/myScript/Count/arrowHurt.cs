@@ -10,7 +10,7 @@ public class arrowHurt : MonoBehaviour
     Transform tran;
     private void Start()
     {
-        player = GameObject.Find("xia");
+        player = GameObject.Find("player");
         rig = gameObject.GetComponent<Rigidbody2D>();
         x = transform.position.x;        
     }

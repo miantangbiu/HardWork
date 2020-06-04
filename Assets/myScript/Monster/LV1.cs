@@ -49,6 +49,7 @@ public class LV1 : MonoBehaviour{
         if (collision.gameObject.tag == "Player")
         {
             hurtCount.hurt(LV1Att.Atk,collision.gameObject);
+            Destroy(gameObject);
             
         }
 

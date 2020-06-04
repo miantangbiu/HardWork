@@ -114,6 +114,8 @@
     <Compile Include="Assets\Scripts\src\DragonBones\Scripts\unity\UnityTextureAtlasData.cs" />
     <Compile Include="Assets\Scripts\src\DragonBones\Scripts\unity\UnityUGUIDisplay.cs" />
     <Compile Include="Assets\UnityPackages\JsonNetSample\JsonNetSample.cs" />
+    <Compile Include="Assets\boundBox.cs" />
+    <Compile Include="Assets\fadeObject.cs" />
     <Compile Include="Assets\myPlot.cs" />
     <Compile Include="Assets\myScript\Camera\cameraMove.cs" />
     <Compile Include="Assets\myScript\Camera\cameraMoveTwo.cs" />

@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class bossOne : MonoBehaviour {
 
+
+  
     private FSMSystem mySystem { get; set; }
     attriBuild atBuild = new bossOneAttri();
     attriControl atControl = new attriControl();
@@ -46,11 +48,13 @@ public class bossOne : MonoBehaviour {
         mySystem.AddFSMState(skillThree);
         mySystem.AddFSMState(dieState);
 
+
     }
 	
 	// Update is called once per frame
 	void Update () {
 
+        Debug.Log("1");
         mySystem.UpdateSystem();
     }
 }
