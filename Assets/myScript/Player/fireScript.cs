@@ -14,8 +14,9 @@ public class fireScript : MonoBehaviour
     private void Start()
     {
         playerArmature = GetComponent<UnityArmatureComponent>();
-      //  playerArmature.animation.Play("walk",-1);
-        ani = GameObject.Find("fire").GetComponent<Animator>();
+        //  playerArmature.animation.Play("walk",-1);
+        //ani = GameObject.Find("fire").GetComponent<Animator>();
+        ani = GetComponent<Animator>();
     }
     private void Update()
     {
@@ -28,7 +29,7 @@ public class fireScript : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.M))
         {
-            playerArmature.animation.FadeIn("jumpturn");
+            ani.SetTrigger("walk");
         }
     }
 

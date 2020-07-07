@@ -12,6 +12,7 @@ public class rayCreate : MonoBehaviour {
     attribute player;
 	// Use this for initialization
 	void Start () {
+
         mySprite = gameObject.GetComponent<SpriteRenderer>();
         box = gameObject.GetComponent<BoxCollider2D>();
         ani = gameObject.GetComponent<Animator>();
@@ -50,6 +51,8 @@ public class rayCreate : MonoBehaviour {
 	}
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        if (collision.tag != "Enemy" || collision.tag != "Gun")
+            return;
         hurtCount.hurt(2 * player.Atk, collision.gameObject);
         if (collision.gameObject.tag == "Gun")
         {
